@@ -1,0 +1,23 @@
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    container_name: expense-tracker-db
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "YourStrong!Passw0rd"
+    ports:
+      - "1433:1433"
+
+  api:
+    build: .
+    container_name: expense-tracker
+    depends_on:
+      - db
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=db;Database=ExpenseTracker;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True"
+      Jwt__Key: "K8x2Qp9vN3mZ7wRtY5jL1sD4fG6hB0cX"
+      Jwt__Issuer: "ExpenseTracker"
+      Jwt__Audience: "ExpenseTrackerUsers"
+    ports:
+      - "8080:8080"
