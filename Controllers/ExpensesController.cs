@@ -1,17 +1,25 @@
-﻿using ExpenseTracker.Data;
+﻿using Asp.Versioning;
+using CsvHelper;
+using CsvHelper.Configuration;
+using ExpenseTracker.Data;
 using ExpenseTracker.DTOs;
 using ExpenseTracker.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 using System.Security.Claims;
+using System.Text;
 
 namespace ExpenseTracker.Controllers
 {
+    [ApiVersion("1.0")]
     [Authorize]
-    [Route("api/[controller]")]
+   // [Route("api/[controller]")]
     [ApiController]
+    [Route("api/v{version:apiVersion}/[controller]")]
+
     public class ExpensesController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -20,19 +28,24 @@ namespace ExpenseTracker.Controllers
         {
             _context = context;
         }
+        private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
         // GET /api/expenses?categoryId=2&from=2026-01-01&to=2026-08-01
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ExpenseDto>>> GetExpenses(
             [FromQuery] int? categoryId,
             [FromQuery] DateTime? from,
-            [FromQuery] DateTime? to)
+            [FromQuery] DateTime? to,
+            [FromQuery] string? sortBy = "date",
+            [FromQuery] string? sortDir = "desc",
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
-            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-         
+            //var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
             var query = _context.Expenses.Include(e => e.Category).AsQueryable();
-            query = query.Where(e => e.UserId == userId);
-          
+            query = query.Where(e => e.UserId == GetUserId());
+
             if (categoryId.HasValue)
                 query = query.Where(e => e.CategoryId == categoryId);
 
@@ -42,8 +55,24 @@ namespace ExpenseTracker.Controllers
             if (to.HasValue)
                 query = query.Where(e => e.Date <= to);
 
+            query = (sortBy?.ToLower(), sortDir?.ToLower()) switch
+            {
+                ("amount", "asc") => query.OrderBy(b => b.Amount),
+                ("amount", "desc") => query.OrderByDescending(b => b.Amount),
+                ("category", "asc") => query.OrderBy(b => b.Category.Name),
+                ("category", "desc") => query.OrderByDescending(b => b.Category.Name),
+                ("date", "asc") => query.OrderBy(b => b.Date),
+                _ => query.OrderByDescending(b => b.Date)// default: date desc
+
+            };
+
+
+            var totalCount = await query.CountAsync();
+
             var expenses = await query
                 .OrderByDescending(e => e.Date)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(e => new ExpenseDto
                 {
                     Id = e.Id,
@@ -55,7 +84,14 @@ namespace ExpenseTracker.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(expenses);
+            return Ok(new
+            {
+                TotalCOunt = totalCount,
+                Page = page,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                Data = expenses
+            });
         }
 
         [HttpGet("{id}")]
@@ -84,7 +120,7 @@ namespace ExpenseTracker.Controllers
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
             var categoryExists = await _context.Categories.AnyAsync(c => c.Id == dto.CategoryId);
-            
+
 
             if (!categoryExists) return BadRequest("Invalid CategoryId.");
 
@@ -124,10 +160,50 @@ namespace ExpenseTracker.Controllers
             var expense = await _context.Expenses.FindAsync(id);
             if (expense == null) return NotFound();
 
-            _context.Expenses.Remove(expense);
+            // _context.Expenses.Remove(expense);
+            expense.IsDeleted = true;
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+
+        [HttpGet("export")]
+        public async Task<IActionResult> ExportExpenses(
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to)
+        {
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var query = _context.Expenses
+                .Include(x => x.Category)
+                .Where(x => x.UserId == userId)
+                .AsQueryable();
+            if (from.HasValue)
+                query = query.Where(x => x.Date >= from);
+            if (to.HasValue)
+                query = query.Where(x => x.Date <= to);
+            var expenses = await query
+                .OrderByDescending(x => x.Date)
+                .Select(x => new
+                {
+                    x.Date,
+                    Category = x.Category.Name,
+                    x.Amount,
+                    x.Description
+                })
+                .ToListAsync();
+
+
+            using var memoryStream = new MemoryStream();
+            using var writer = new StreamWriter(memoryStream, Encoding.UTF8, leaveOpen: true);
+            using var csv = new CsvWriter(writer, new CsvConfiguration(CultureInfo.InvariantCulture));
+
+            csv.WriteRecords(expenses);
+            writer.Flush();
+            memoryStream.Position = 0;
+
+            var fileName = $"expenses_{DateTime.UtcNow:yyyyMMdd}.csv";
+            return File(memoryStream.ToArray(), "text/csv", fileName);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using ExpenseTracker.Data;
+﻿using Asp.Versioning;
+using ExpenseTracker.Data;
 using ExpenseTracker.DTOs;
 using ExpenseTracker.Models;
 using Microsoft.AspNetCore.Http;
@@ -8,8 +9,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ExpenseTracker.Controllers
 {
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+  //  [Route("api/[controller]")]
     [ApiController]
+    [Route("api/v{version:apiVersion}/[controller]")]
+
     public class CategoriesController : ControllerBase
     {
         private readonly AppDbContext _context;

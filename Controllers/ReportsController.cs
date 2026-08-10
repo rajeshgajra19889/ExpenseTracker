@@ -1,12 +1,21 @@
-﻿using ExpenseTracker.Data;
+﻿using Asp.Versioning;
+using ExpenseTracker.Data;
+using ExpenseTracker.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
+using System.Numerics;
+using System.Security.Claims;
 
 namespace ExpenseTracker.Controllers
 {
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+  //  [Route("api/[controller]")]
     [ApiController]
+    [Route("api/v{version:apiVersion}/[controller]")]
+
     public class ReportsController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -16,6 +25,7 @@ namespace ExpenseTracker.Controllers
             _context = context;
         }
 
+        [OutputCache(Duration = 30)]
         // GET /api/reports/by-category?year=2026&month=8
         [HttpGet("by-category")]
         public async Task<IActionResult> GetSpendByCategory([FromQuery] int? year, [FromQuery] int? month)
@@ -99,6 +109,35 @@ namespace ExpenseTracker.Controllers
                 AverageExpense = Math.Round(avgExpense, 2),
                 CurrentMonthSpend = thisMonth
             });
+        }
+
+        [Authorize]
+        [HttpGet("budget-status")]
+        public async Task<IActionResult> GetBudgetStatus([FromQuery] int month, [FromQuery] int year)
+        {
+            var userID = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var budgets = await _context.Budgets
+                .Include(b => b.Category)
+                .Where(b => b.UserId == userID && b.Month == month && b.Year == year)
+                .ToListAsync();
+            var actualSpend = await _context.Expenses
+                .Where(e => e.UserId == userID && e.Date.Month == month && e.Date.Year == year)
+                .GroupBy(e => e.CategoryId)
+                .Select(g => new { CategoryId = g.Key, Total = g.Sum(e => e.Amount) })
+                .ToListAsync();
+            var result=budgets.Select(b=>new
+            {
+
+                Category=b.Category.Name,
+                Limit=b.MonthlyLimit,
+                Spent = actualSpend.FirstOrDefault(a => a.CategoryId == b.CategoryId)?.Total ?? 0,
+                Remaining = b.MonthlyLimit - (actualSpend.FirstOrDefault(a => a.CategoryId == b.CategoryId)?.Total ?? 0),
+                OverBudget = (actualSpend.FirstOrDefault(a => a.CategoryId == b.CategoryId)?.Total ?? 0) > b.MonthlyLimit
+            });
+
+            return Ok(result);
+
+
         }
     }
 }
