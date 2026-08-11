@@ -8,10 +8,16 @@ Built as a portfolio project to demonstrate practical backend .NET skills: EF Co
 
 ## Features
 
-- **CRUD APIs** for Expenses and Categories
-- **JWT Authentication** — register/login, with expenses scoped to the logged-in user
-- **LINQ Reporting Endpoints** — spend by category, monthly trend, top categories, summary stats
-- **Filtering & Querying** — filter expenses by category and date range
+- **CRUD APIs** for Expenses, Categories, and Budgets
+- **JWT Authentication** — register/login, with expenses and budgets scoped to the logged-in user
+- **LINQ Reporting Endpoints** — spend by category, monthly trend, top categories, summary stats, budget vs. actual
+- **Filtering, Sorting & Pagination** — filter expenses by category/date range, sort by date/amount/category, paged results
+- **CSV Export** — download expenses for a date range as a CSV file
+- **Soft Deletes** — deleted expenses are retained (not destroyed) via an `IsDeleted` flag and a global EF Core query filter
+- **API Versioning** — endpoints are versioned (`/api/v1/...`) to support safe evolution over time
+- **Response Caching** — report endpoints use output caching to reduce database load
+- **Structured Logging** — request and error logging via Serilog, written to console and rolling daily log files
+- **Global Exception Handling** — unhandled exceptions return a clean, consistent JSON error response
 - **Dockerized** — API and SQL Server run together via Docker Compose
 - **EF Core Code-First** — migrations manage schema, relationships enforced at the database level
 
@@ -26,6 +32,8 @@ Built as a portfolio project to demonstrate practical backend .NET skills: EF Co
 | Database       | SQL Server                           |
 | Auth           | JWT Bearer Authentication            |
 | Containerization | Docker, Docker Compose             |
+| Logging        | Serilog                              |
+| Versioning     | Asp.Versioning                       |
 | API Testing    | Postman                              |
 
 ---
@@ -88,55 +96,75 @@ dotnet run
 
 ## API Endpoints
 
+All endpoints are versioned under `/api/v1/`.
+
 ### Auth
-| Method | Endpoint              | Description          |
-|--------|------------------------|----------------------|
-| POST   | `/api/auth/register`  | Create a new user    |
-| POST   | `/api/auth/login`     | Log in, returns JWT   |
+| Method | Endpoint                  | Description          |
+|--------|----------------------------|----------------------|
+| POST   | `/api/v1/auth/register`   | Create a new user    |
+| POST   | `/api/v1/auth/login`      | Log in, returns JWT   |
 
 ### Categories
-| Method | Endpoint                  | Description         |
-|--------|----------------------------|----------------------|
-| GET    | `/api/categories`          | List all categories |
-| GET    | `/api/categories/{id}`     | Get one category     |
-| POST   | `/api/categories`          | Create a category    |
-| PUT    | `/api/categories/{id}`     | Update a category    |
-| DELETE | `/api/categories/{id}`     | Delete a category    |
+| Method | Endpoint                      | Description         |
+|--------|---------------------------------|----------------------|
+| GET    | `/api/v1/categories`           | List all categories |
+| GET    | `/api/v1/categories/{id}`      | Get one category     |
+| POST   | `/api/v1/categories`           | Create a category    |
+| PUT    | `/api/v1/categories/{id}`      | Update a category    |
+| DELETE | `/api/v1/categories/{id}`      | Delete a category    |
 
 ### Expenses *(requires authentication)*
-| Method | Endpoint                                              | Description                      |
-|--------|--------------------------------------------------------|-----------------------------------|
-| GET    | `/api/expenses?categoryId=&from=&to=`                  | List expenses, with filters      |
-| GET    | `/api/expenses/{id}`                                   | Get one expense                  |
-| POST   | `/api/expenses`                                        | Create an expense                |
-| PUT    | `/api/expenses/{id}`                                   | Update an expense                |
-| DELETE | `/api/expenses/{id}`                                   | Delete an expense                |
+| Method | Endpoint                                                                          | Description                                          |
+|--------|-------------------------------------------------------------------------------------|--------------------------------------------------------|
+| GET    | `/api/v1/expenses?categoryId=&from=&to=&sortBy=&sortDir=&page=&pageSize=`         | List expenses — filter, sort, and paginate            |
+| GET    | `/api/v1/expenses/{id}`                                                           | Get one expense                                        |
+| POST   | `/api/v1/expenses`                                                                | Create an expense                                      |
+| PUT    | `/api/v1/expenses/{id}`                                                           | Update an expense                                      |
+| DELETE | `/api/v1/expenses/{id}`                                                           | Soft-delete an expense (flags `IsDeleted`, not removed) |
+| GET    | `/api/v1/expenses/export?from=&to=`                                               | Download expenses as a CSV file                        |
+
+`sortBy` accepts `date`, `amount`, or `category`; `sortDir` accepts `asc` or `desc`. List responses are wrapped in an object with `TotalCount`, `Page`, `PageSize`, `TotalPages`, and `Data`.
+
+### Budgets *(requires authentication)*
+| Method | Endpoint                  | Description                                     |
+|--------|----------------------------|--------------------------------------------------|
+| GET    | `/api/v1/budgets`         | List budgets for the logged-in user             |
+| POST   | `/api/v1/budgets`         | Create a monthly budget for a category          |
+| DELETE | `/api/v1/budgets/{id}`    | Delete a budget                                  |
 
 ### Reports
-| Method | Endpoint                                | Description                             |
-|--------|-------------------------------------------|-------------------------------------------|
-| GET    | `/api/reports/by-category?year=&month=`  | Total spend grouped by category         |
-| GET    | `/api/reports/monthly-trend?year=`       | Spend by month for a given year         |
-| GET    | `/api/reports/top-categories?count=`     | Highest-spending categories             |
-| GET    | `/api/reports/summary`                    | Overall totals, average, current month |
+| Method | Endpoint                                             | Description                                            |
+|--------|---------------------------------------------------------|-----------------------------------------------------------|
+| GET    | `/api/v1/reports/by-category?year=&month=`              | Total spend grouped by category                          |
+| GET    | `/api/v1/reports/monthly-trend?year=`                   | Spend by month for a given year                          |
+| GET    | `/api/v1/reports/top-categories?count=`                 | Highest-spending categories                               |
+| GET    | `/api/v1/reports/summary`                                | Overall totals, average, current month                    |
+| GET    | `/api/v1/reports/budget-status?month=&year=` *(auth)*   | Budget vs. actual spend per category, flags over-budget   |
+
+Report endpoints are output-cached for 30 seconds to reduce database load on repeated calls.
 
 ---
 
 ## Authentication Flow
 
-1. `POST /api/auth/register` with a username, email, and password
+1. `POST /api/v1/auth/register` with a username, email, and password
 2. Response includes a JWT token
 3. In Postman: **Authorization tab → Bearer Token**, paste the token
-4. All `/api/expenses` requests now authenticate as that user — data is automatically scoped to the logged-in user only
+4. All `/api/v1/expenses` and `/api/v1/budgets` requests now authenticate as that user — data is automatically scoped to the logged-in user only
 
 ---
 
 ## What This Project Demonstrates
 
-- Designing a normalized relational schema with EF Core (one-to-many relationships, cascade/restrict delete behavior)
+- Designing a normalized relational schema with EF Core (one-to-many relationships, cascade/restrict delete behavior, unique constraints for business rules)
 - Separating entities from DTOs to control API contracts
 - Writing LINQ aggregation queries (`GroupBy`, `Sum`, `OrderByDescending`, `Take`) that execute in SQL, not in memory
+- Implementing database-level pagination and dynamic sorting on `IQueryable` before materializing results
 - Implementing JWT authentication and scoping data access by authenticated user
+- Soft deletes via a global EF Core query filter, preserving data instead of destroying it
+- API versioning to support evolving the contract without breaking existing consumers
+- Centralized exception handling middleware and structured logging (Serilog) instead of scattered try/catch and console output
+- Response caching on read-heavy report endpoints, with awareness of the resulting staleness tradeoff
 - Managing secrets safely (`dotnet user-secrets` locally, environment variables in Docker) instead of committing them
 - Multi-stage Docker builds and multi-container orchestration with Docker Compose
 
@@ -144,11 +172,11 @@ dotnet run
 
 ## Possible Future Improvements
 
-- Budget entity with monthly limits and alerts
-- Pagination on list endpoints
-- Unit and integration tests
+- Unit and integration tests (xUnit, in-memory EF Core provider)
+- Live cloud deployment (Azure App Service + Azure SQL)
 - Frontend client (React or Blazor)
 - CI/CD pipeline to auto-deploy on push
+- Budget alerts/notifications when nearing or exceeding a limit
 
 ---
 
