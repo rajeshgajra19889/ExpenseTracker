@@ -8,8 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ExpenseTracker.Controllers
 {
-    [Route("api/[controller]")]
+    // [Route("api/[controller]")]
     [ApiController]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class AuthController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -33,12 +34,19 @@ namespace ExpenseTracker.Controllers
                 Email = dto.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password)
             };
+            user.RefreshToken = _tokenService.GenerateRefreshToken();
+            user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
             var token = _tokenService.CreateToken(user);
-            return Ok(new AuthResponseDto { Token = token, Username = user.Username });
+            return Ok(new AuthResponseDto
+            {
+                Token = token,
+                Username = user.Username,
+                RefreshToken = user.RefreshToken
+            });
         }
 
         [HttpPost("login")]
@@ -48,9 +56,38 @@ namespace ExpenseTracker.Controllers
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
                 return Unauthorized("Invalid username or password.");
-
+            user.RefreshToken = _tokenService.GenerateRefreshToken();
+            user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+            await _context.SaveChangesAsync();
             var token = _tokenService.CreateToken(user);
-            return Ok(new AuthResponseDto { Token = token, Username = user.Username });
+            return Ok(new AuthResponseDto
+            {
+                Token = token,
+                RefreshToken = user.RefreshToken,
+                Username = user.Username
+            });
+        }
+
+        [HttpPost("refresh")]
+        public async Task<ActionResult<AuthResponseDto>> Refresh(RefreshRequestDto dto)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == dto.RefreshToken);
+
+            if (user == null || user.RefreshTokenExpiry < DateTime.UtcNow)
+                return Unauthorized("Invalid or expired refresh token.");
+
+            // Issue a new access token AND rotate the refresh token
+            user.RefreshToken = _tokenService.GenerateRefreshToken();
+            user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+            await _context.SaveChangesAsync();
+
+            var newToken = _tokenService.CreateToken(user);
+            return Ok(new AuthResponseDto
+            {
+                Token = newToken,
+                RefreshToken = user.RefreshToken,
+                Username = user.Username
+            });
         }
     }
 }

@@ -3,11 +3,13 @@ using ExpenseTracker.Data;
 using ExpenseTracker.Middleware;
 using ExpenseTracker.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 //using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -67,8 +69,33 @@ builder.Services.AddApiVersioning(options =>
 });
 
 builder.Services.AddOutputCache();
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>("database");
 var app = builder.Build();
 app.UseSerilogRequestLogging();
+//app.MapHealthChecks("/health");
+
+
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+
+        var result = JsonSerializer.Serialize(new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                description = e.Value.Description
+            })
+        });
+
+        await context.Response.WriteAsync(result);
+    }
+});
 app.UseOutputCache();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 

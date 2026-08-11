@@ -8,5 +8,10 @@
         public string PasswordHash { get; set; } = string.Empty;
 
         public ICollection<Expense> Expenses { get; set; } = new List<Expense>();
+
+        public string Role { get; set; } = "User"; // "User" or "Admin"
+
+        public string? RefreshToken { get; set; }
+        public DateTime? RefreshTokenExpiry { get; set; }
     }
 }

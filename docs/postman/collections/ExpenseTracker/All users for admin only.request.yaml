@@ -1,0 +1,5 @@
+$kind: http-request
+name: All users for admin only
+url: "{{baseUrl}}/admin/users"
+method: GET
+order: 4214869158062875

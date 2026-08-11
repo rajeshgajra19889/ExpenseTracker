@@ -1,0 +1,17 @@
+$kind: http-request
+name: Expenses Fetsch
+url: "{{baseUrl}}/expenses?categoryId=1&from=2026-01-01&to=2026-08-31&sortBy=amount&sortDir=desc&page=1&pageSize=10"
+method: GET
+queryParams:
+  categoryId: "1"
+  from: 2026-01-01
+  to: 2026-08-31
+  sortBy: amount
+  sortDir: desc
+  page: "1"
+  pageSize: "10"
+scripts:
+  - type: beforeRequest
+    code: ""
+    language: text/javascript
+order: 4047779558265590

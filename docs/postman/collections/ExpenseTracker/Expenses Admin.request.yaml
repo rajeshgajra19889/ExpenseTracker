@@ -1,0 +1,5 @@
+$kind: http-request
+name: Expenses Admin
+url: "{{baseUrl}}/admin/app-expenses"
+method: GET
+order: 4496120435162914

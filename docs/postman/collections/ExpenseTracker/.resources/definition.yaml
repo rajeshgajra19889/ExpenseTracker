@@ -1,0 +1,21 @@
+$kind: collection
+name: ExpenseTracker
+variables:
+  - key: supabase_service_role_api_key_0ziy
+    secret: true
+    disabled: false
+  - key: baseUrl
+    value: ""
+    disabled: false
+  - key: token
+    value: ""
+    disabled: false
+  - key: refreshToken
+    value: ""
+    disabled: false
+auth:
+  - id: adf08e41-d2c3-46c7-9023-46e555b0bb19
+    type: bearer
+    name: Bearer Token
+    credentials:
+      token: "{{token}}"
