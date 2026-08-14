@@ -27,5 +27,3 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t expense-tracker-api .
-        run: docker build -t expense-tracker-api .
-        run: docker build -t expense-tracker-api .
