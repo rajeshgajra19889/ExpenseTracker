@@ -1,5 +1,9 @@
 $kind: http-request
 name: Categories Get
-url: " http://localhost:5013/api/v1/categories"
+url: "{{baseUrl}}/categories"
 method: GET
-order: 1786381358732
+scripts:
+  - type: beforeRequest
+    code: ""
+    language: text/javascript
+order: 4205068442097530

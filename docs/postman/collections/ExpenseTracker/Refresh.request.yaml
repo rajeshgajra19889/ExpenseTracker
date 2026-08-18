@@ -6,7 +6,7 @@ body:
   type: json
   content: "{\r
 
-    \  \"refreshToken\": {{refreshToken}}\r
+    \  \"refreshToken\": \"{{refreshToken}}\"\r
 
     }"
 scripts:

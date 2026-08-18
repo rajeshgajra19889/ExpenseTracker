@@ -1,0 +1,16 @@
+$kind: http-request
+name: User Registration
+url: "{{baseUrl}}/auth/register"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \"username\": \"kevin\",\r
+
+    \"email\" :\"kevin@gmail.com\",\r
+
+    \"password\" :\"test\"\r
+
+    }"
+order: 4503403277127183

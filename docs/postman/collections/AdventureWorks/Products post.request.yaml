@@ -1,0 +1,22 @@
+$kind: http-request
+name: Products post
+url: http://localhost:5231/api/products
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"name\": \"Test Product\",\r
+
+    \    \"productNumber\": \"TEST-002\",\r
+
+    \    \"productModelId\": 999999,\r
+
+    \    \"color\": \"Black\",\r
+
+    \    \"standardCost\": 10,\r
+
+    \    \"listPrice\": 20\r
+
+    }"
+order: 1891537745830470

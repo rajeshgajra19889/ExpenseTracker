@@ -8,7 +8,7 @@ variables:
     value: ""
     disabled: false
   - key: token
-    value: ""
+    secret: true
     disabled: false
   - key: refreshToken
     value: ""

@@ -1,0 +1,5 @@
+$kind: http-request
+name: New Request
+url: http://localhost:5087/api/dashboard/vendor-spend
+method: GET
+order: 4337425172754142

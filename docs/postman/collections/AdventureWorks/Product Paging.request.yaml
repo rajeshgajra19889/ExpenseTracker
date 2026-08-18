@@ -1,0 +1,34 @@
+$kind: http-request
+name: Product Paging
+url: http://localhost:5231/api/products?page=1&pageSize=10&sortColumn=name&sortDirection=desc&ProductModelId =23&color=silver
+method: GET
+queryParams:
+  - key: page
+    value: "1"
+    disabled: false
+    description: ""
+  - key: pageSize
+    value: "10"
+    disabled: false
+    description: ""
+  - key: search
+    value: road
+    disabled: true
+    description: ""
+  - key: sortColumn
+    value: name
+    disabled: false
+    description: ""
+  - key: sortDirection
+    value: desc
+    disabled: false
+    description: ""
+  - key: "ProductModelId "
+    value: "23"
+    disabled: false
+    description: ""
+  - key: color
+    value: silver
+    disabled: false
+    description: ""
+order: 3813708748890104

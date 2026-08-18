@@ -1,4 +1,8 @@
 $kind: http-request
-url: ""
+name: Expense By Id
+url: "{{baseUrl}}/expenses/"
 method: GET
+body:
+  type: json
+  content: ""
 order: 4503206589191525

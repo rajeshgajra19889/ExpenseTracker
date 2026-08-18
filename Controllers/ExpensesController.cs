@@ -16,7 +16,7 @@ namespace ExpenseTracker.Controllers
 {
     [ApiVersion("1.0")]
     [Authorize]
-   // [Route("api/[controller]")]
+    // [Route("api/[controller]")]
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
 
@@ -57,7 +57,7 @@ namespace ExpenseTracker.Controllers
 
             query = (sortBy?.ToLower(), sortDir?.ToLower()) switch
             {
-                ("amount", "asc") => query.OrderBy(b => b.Amount),
+                ("name", "asc") => query.OrderBy(b => b.Amount),
                 ("amount", "desc") => query.OrderByDescending(b => b.Amount),
                 ("category", "asc") => query.OrderBy(b => b.Category.Name),
                 ("category", "desc") => query.OrderByDescending(b => b.Category.Name),
@@ -80,7 +80,8 @@ namespace ExpenseTracker.Controllers
                     Date = e.Date,
                     Description = e.Description,
                     CategoryId = e.CategoryId,
-                    CategoryName = e.Category.Name
+                    CategoryName = e.Category.Name,
+                    ReceiptUrl = e.ReceiptUrl
                 })
                 .ToListAsync();
 
@@ -110,7 +111,8 @@ namespace ExpenseTracker.Controllers
                 Date = expense.Date,
                 Description = expense.Description,
                 CategoryId = expense.CategoryId,
-                CategoryName = expense.Category.Name
+                CategoryName = expense.Category.Name,
+                ReceiptUrl=expense.ReceiptUrl
             });
         }
 
@@ -204,6 +206,35 @@ namespace ExpenseTracker.Controllers
 
             var fileName = $"expenses_{DateTime.UtcNow:yyyyMMdd}.csv";
             return File(memoryStream.ToArray(), "text/csv", fileName);
+        }
+
+        [HttpPost("{id}/receipt")]
+        public async Task<ActionResult> UploadReceipt(int Id, IFormFile file)
+        {
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var expense = await _context.Expenses.FirstOrDefaultAsync(x => x.Id == Id && x.UserId == userId);
+            if (expense == null) return NotFound();
+            if (file == null || file.Length == 0)
+                return BadRequest("No File Upload");
+            var allowedExtensions = new[] { ".jpg", ".png", ".jpeg", ".pdf" };
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(extension))
+                return BadRequest("Only JPG, PNG or PDF files are allowed.");
+            if (file.Length > 5 * 1024 * 1024)//5 MB Limit
+                return BadRequest("File too large. Max size is 5MB.");
+            var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "receipts");
+            Directory.CreateDirectory(uploadPath);
+            var fileName = $"{Guid.NewGuid()}{extension}";
+            var filePath = Path.Combine(uploadPath, fileName);
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+            expense.ReceiptUrl = $"/receipts/{fileName}";
+            await _context.SaveChangesAsync();
+
+            return Ok(new { receiptUrl = expense.ReceiptUrl });
+
         }
     }
 }

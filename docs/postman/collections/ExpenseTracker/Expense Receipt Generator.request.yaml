@@ -1,0 +1,14 @@
+$kind: http-request
+name: Expense Receipt Generator
+url: "{{baseUrl}}/expenses/3/receipt"
+method: POST
+body:
+  type: formdata
+  content:
+    - type: file
+      key: file
+      src:
+        - /C:/Users/Vinod/OneDrive/Pictures/Screenshots/Screenshot 2025-06-23 215636.png
+      description: ""
+      disabled: false
+order: 4503373805702987

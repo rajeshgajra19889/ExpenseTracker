@@ -1,0 +1,20 @@
+$kind: http-request
+name: Product Update
+url: http://localhost:5231/api/products/1013
+method: PUT
+body:
+  type: json
+  content: "{\r
+
+    \  \"name\": \"Update Angular Product\",\r
+
+    \  \"productNumber\": \"TEST-015\",\r
+
+    \  \"color\": \"Black/Grey\",\r
+
+    \  \"standardCost\": 25.00,\r
+
+    \  \"listPrice\": 40.00\r
+
+    }"
+order: 3273769807792754

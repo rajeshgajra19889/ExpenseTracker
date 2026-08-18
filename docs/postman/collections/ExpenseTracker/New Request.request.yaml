@@ -1,0 +1,14 @@
+$kind: http-request
+name: New Request
+url: http://localhost:5087/POST /api/Auth/login
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"username\": \"admin\",\r
+
+    \  \"password\": \"test\"\r
+
+    }"
+order: 4503467701201407

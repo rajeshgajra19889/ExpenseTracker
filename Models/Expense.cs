@@ -14,6 +14,8 @@
         public User User { get; set; } = null!;
 
         public bool IsDeleted { get; set; } = false;
-     
+
+        public string? ReceiptUrl { get; set; }
+
     }
 }

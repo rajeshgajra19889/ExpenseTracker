@@ -1,5 +1,5 @@
 $kind: http-request
 name: CategoryById
-url: http://localhost:5013/api/v1/categories/2
+url: "{{baseUrl}}/categories/2"
 method: GET
 order: 3675186831072447

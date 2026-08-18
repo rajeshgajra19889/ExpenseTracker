@@ -1,15 +1,36 @@
 $kind: http-request
 name: Expenses Fetsch
-url: "{{baseUrl}}/expenses?categoryId=1&from=2026-01-01&to=2026-08-31&sortBy=amount&sortDir=desc&page=1&pageSize=10"
+url: "{{baseUrl}}/expenses?from=2026-01-01&to=2026-08-31&page=1&pageSize=10"
 method: GET
 queryParams:
-  categoryId: "1"
-  from: 2026-01-01
-  to: 2026-08-31
-  sortBy: amount
-  sortDir: desc
-  page: "1"
-  pageSize: "10"
+  - key: categoryId
+    value: "1"
+    disabled: true
+    description: ""
+  - key: from
+    value: 2026-01-01
+    disabled: false
+    description: ""
+  - key: to
+    value: 2026-08-31
+    disabled: false
+    description: ""
+  - key: sortBy
+    value: amount
+    disabled: true
+    description: ""
+  - key: sortDir
+    value: desc
+    disabled: true
+    description: ""
+  - key: page
+    value: "1"
+    disabled: false
+    description: ""
+  - key: pageSize
+    value: "10"
+    disabled: false
+    description: ""
 scripts:
   - type: beforeRequest
     code: ""

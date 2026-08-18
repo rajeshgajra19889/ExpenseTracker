@@ -97,6 +97,7 @@ app.MapHealthChecks("/health", new HealthCheckOptions
     }
 });
 app.UseOutputCache();
+app.UseStaticFiles();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 
