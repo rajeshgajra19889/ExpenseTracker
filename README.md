@@ -1,9 +1,6 @@
 # Expense Tracker API
 
 ![CI](https://github.com/rajeshgajra19889/ExpenseTracker/actions/workflows/ci.yml/badge.svg)
-
-
-
 A full-featured backend REST API for tracking personal expenses, built with **ASP.NET Core (.NET 10)** and **Entity Framework Core**. Supports CRUD for expenses, categories, and budgets, JWT authentication with role-based authorization and refresh tokens, LINQ-powered reporting, and is fully containerized with Docker.
 
 Built as a portfolio project to demonstrate practical backend .NET skills that go beyond basic CRUD: secure authentication and authorization, aggregation queries, and production-readiness concerns like versioning, caching, logging, and health checks.
