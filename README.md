@@ -1,13 +1,6 @@
 # Expense Tracker API
 
 ![CI](https://github.com/rajeshgajra19889/ExpenseTracker/actions/workflows/ci.yml/badge.svg)
-<p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angular/angular-original.svg" width="60" alt="Angular 21" />
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dot-net/dot-net-original.svg" width="60" alt=".NET 10" />
-</p>
-![.NET Version](https://shields.io)
-![C#](https://shields.io)
-![API](https://shields.io)
 
 
 A full-featured backend REST API for tracking personal expenses, built with **ASP.NET Core (.NET 10)** and **Entity Framework Core**. Supports CRUD for expenses, categories, and budgets, JWT authentication with role-based authorization and refresh tokens, LINQ-powered reporting, and is fully containerized with Docker.
