@@ -1,5 +1,5 @@
 # Stage 1: Build using the .NET 10 SDK
-FROM ://microsoft.com AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build-env
 WORKDIR /app
 
 # Optimize layer caching
@@ -11,7 +11,7 @@ COPY . ./
 RUN dotnet publish -c Release -o out
 
 # Stage 2: Runtime using the lightweight .NET 10 ASP.NET image
-FROM ://microsoft.com
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=build-env /app/out .
 
